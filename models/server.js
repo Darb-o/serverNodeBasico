@@ -9,7 +9,7 @@ class Server {
         //Invoca a express
         this.app = express();
         //El puerto queda como variable de entorno
-        this.port = process.env.PORT;
+        this.port = process.env.PORT || 8080;
         this.usuariosPath = '/api/usuarios';
         //Conectar base de datos
         this.conectarDB();
