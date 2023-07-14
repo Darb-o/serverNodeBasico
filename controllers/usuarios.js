@@ -1,42 +1,72 @@
 
 const { response,request } = require('express'); 
+const bcryptjs = require('bcryptjs');
+const Usuario = require('../models/usuario');
 
-const usuariosGet = ( req = request, res = response ) => {
-    const { q, nombre = 'No name', apikey} = req.query;
-    res.json({
-        msg: 'Get API - Controlador',
-        q,
-        nombre, 
-        apikey
+
+const usuariosGet = async( req = request, res = response ) => {
+    const { limite = 5, desde = 0 } = req.query;
+    const query = { estado:true }
+    const [ total, usuarios ] = await Promise.all([
+        Usuario.countDocuments(query),
+        Usuario.find(query)
+        .skip( Number (desde) )
+        .limit( Number (limite) )
+    ])
+    res.json( {
+        total,
+        usuarios
     });
 };
-const usuariosPost = (req = request, res = response ) => {
+
+const usuariosPost = async (req = request, res = response ) => {
+
     //se debe limpiar para que no se ejecuten otro tipo de cosas como scripts, etc
-    const { nombre, edad } = req.body;
-    res.json({
-        msg: 'Post API - Controlador',
-        nombre,
-        edad
+    //ahora como al crear un esquema del usuario no es necesario limpiar
+    //puesto que solo va a tomar los atributos con el mismo nombre y los asigna
+    
+    const { nombre, correo, password, rol } = req.body;
+    const usuario = new Usuario( {
+        nombre, correo, password, rol
     });
-};
-const usuariosPut = ( req = request, res = response ) => {
-    const { id } = req.params;
-    res.json({
-        msg: 'Put API - Controlador',
-        id
-    });
-};
-const usuariosPatch = ( req = request, res = response ) => {
-    res.json({
-        msg: 'Patch API - Controlador'
-    });
-};
-const usuariosDelete = ( req = request, res = response ) => {
-    res.json({
-        msg: 'Delete API - Controlador'
-    });
+
+    //encriptar contraseña
+    //determina la cantidad de vueltas para hacerle hash a una contraseña
+    
+    const salt = bcryptjs.genSaltSync();
+    usuario.password = bcryptjs.hashSync( password, salt );
+
+    //guarda en la base de datos
+    
+    await usuario.save();
+
+    res.json(usuario);
+
 };
 
+const usuariosPut = async ( req = request, res = response ) => {
+    const { id } = req.params;
+    const { _id, password, google, ...resto } = req.body;
+    //validar contra base de datos
+    if( password ){
+        const salt = bcryptjs.genSaltSync();
+        resto.password = bcryptjs.hashSync( password, salt );
+    }
+    const usuario = await Usuario.findByIdAndUpdate( id, resto )
+    res.json(usuario);
+};
+
+const usuariosPatch = ( req = request, res = response ) => {
+    res.json(usuario);
+};
+
+const usuariosDelete = async ( req = request, res = response ) => {
+    const { id } = req.params;
+    const usuario = await Usuario.findByIdAndUpdate( id, { estado:false });
+    res.json({
+        usuario
+    });
+};
 
 module.exports = {
     usuariosGet,
