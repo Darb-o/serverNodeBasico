@@ -5,8 +5,11 @@ const { check } = require('express-validator');
 const { usuariosGet,usuariosPost,usuariosPatch, 
     usuariosPut, usuariosDelete } = require('../controllers/usuarios');
 
-const { validarCampos } = require('../middlewares/validar-campos');
+const { validarCampos, validarJwt, 
+    estadoAdmin, tieneRole} = require('../middlewares');    
+
 const { rolValido,emailExiste,usuarioExistePorId } = require('../helpers/db_validators');
+
 
 //Donde se configuran las rutas
 const router = Router();
@@ -28,12 +31,14 @@ router.post('/',[
     validarCampos
 ],usuariosPost);
 
-router.delete('/:id', usuariosDelete);
-
-router.patch('/',[
+router.delete('/:id',[
+    validarJwt,
+    tieneRole('ADMIN_ROLE','VENTAS_ROLE'),
     check('id','No es un ID válido').isMongoId(),
     check('id').custom( usuarioExistePorId ),
     validarCampos
-], usuariosPatch);
+], usuariosDelete);
+
+router.patch('/', usuariosPatch);
 
 module.exports = router;

@@ -10,6 +10,7 @@ class Server {
         this.app = express();
         //El puerto queda como variable de entorno
         this.port = process.env.PORT || 8080;
+        this.authPath = '/api/auth';
         this.usuariosPath = '/api/usuarios';
         //Conectar base de datos
         this.conectarDB();
@@ -34,6 +35,7 @@ class Server {
 
     routes() {
         this.app.use(this.usuariosPath, require('../routes/usuarios'));
+        this.app.use(this.authPath, require('../routes/auth'));
     }
 
     listen(){
